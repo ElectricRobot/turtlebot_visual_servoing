@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>ros_turtle_visual_servoing</name>
+  <name>turtlebot_visual_servoing</name>
   <version>0.0.0</version>
   <description>The ros turtlebot rope follower package</description>
 
