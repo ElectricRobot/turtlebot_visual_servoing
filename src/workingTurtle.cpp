@@ -6,6 +6,8 @@
 // cpp
 #include <math.h>
 #include <vector>
+#include <iostream>
+#include <fstream>
 // OpenCV
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -31,8 +33,9 @@ int h_min, h_max, lowThreshold;
 int const max_lowThreshold = 100;
 double min,max;
 cv::RNG rng(12345);
-bool init;
 ros::Publisher pub;
+int it_cnt; //iterator counter
+std::ofstream myfile; // file where results will be writen
 
 
 void on_trackbar_min( int, void* )
@@ -321,6 +324,7 @@ void twistPublisher(float angle, float angle_d, float height, float height_d)
 	}
 	std::cout << "Mesurements h alpha: " << height << " " << angle << std::endl;
 	std::cout << "Command vx wz: " << twist.linear.x << " " << twist.angular.z << std::endl;
+	myfile<< it_cnt<<" "<<clock()<<" " << twist.linear.x << " "<< twist.angular.z <<std::endl; // write
 	pub.publish(twist);
 }
 
@@ -328,6 +332,7 @@ void twistPublisher(float angle, float angle_d, float height, float height_d)
 void imageCallBack(const sensor_msgs::ImageConstPtr& msg) {
 	try {
 
+	it_cnt++;
 	//convert ROS image to CV image
 	cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, "bgr8");
 
@@ -382,14 +387,26 @@ int main(int argc, char **argv) {
 	h_min = 0;
 	h_max = 10;
 	lowThreshold = 0;
-	init = true;
+	it_cnt = 0; // iteration number
+
+	//write time in filename
+	time_t t = time(0);   // get time now
+	struct tm * now = localtime( & t );
+	char buffer [80];
+	strftime (buffer,80," %Y%m%d_ %H%M",now);
+
+
+	strcat(buffer,"result.txt");
+	// write results in file
+	myfile.open (buffer);
+	myfile << "N Time vx wz \n";
 
     ros::init(argc, argv, "image_transport_subscriber");
     ros::NodeHandle nh;
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe(TOPIC_NAME, 1, imageCallBack);
 	pub = nh.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
-	ros::Rate loop_rate(10); // apparently the Kinect publishes a new img at rate of 2hz. So we use the same freq. for our command
+	ros::Rate loop_rate(10);
 
 
     //cv::namedWindow("source", CV_WINDOW_NORMAL);
@@ -404,5 +421,6 @@ int main(int argc, char **argv) {
     cv::destroyWindow("source");
     cv::destroyWindow("hough");
     ros::shutdown();
+    myfile.close();
     return 0;
 }

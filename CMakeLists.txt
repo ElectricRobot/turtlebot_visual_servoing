@@ -34,6 +34,10 @@ message(STATUS ${OpenCV_INCLUDE_DIRS} ${VISP_INCLUDE_DIRS})
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable( read_topic src/read_topic.cpp )
+target_link_libraries ( read_topic ${catkin_LIBRARIES} )
+
 add_executable( image_transport_subscriber src/image_transport_subscriber.cpp )
 target_link_libraries ( image_transport_subscriber ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} )
 
