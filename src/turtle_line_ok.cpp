@@ -7,17 +7,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cv_bridge/cv_bridge.h>
-/*#include <opencv2/core/core.hpp>
-#include "opencv2/nonfree/features2d.hpp"
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-*/
 
 #include <visp/vpMeLine.h>
-
-
-//using namespace std;
-//using namespace cv;
 
 static const std::string TOPIC_NAME = "camera/rgb/image_raw";
 static const std::string DEPTH_TOPIC_NAME = "camera/depth/image_raw";

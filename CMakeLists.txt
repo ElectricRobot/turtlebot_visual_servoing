@@ -8,33 +8,30 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
 )
-
 find_package( OpenCV REQUIRED )
-
 # ViSP cannot be found by Catkin.
 # see https://github.com/ros/catkin/issues/606
 find_package(VISP REQUIRED)
-
-catkin_package(
-   DEPENDS
-     VISP
-)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  ${image_processing}
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${VISP_INCLUDE_DIRS}
 )
 
+# Add personal library
+add_library(color_detection src/image_processing/color_detection.cpp)
+target_link_libraries (color_detection ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} )
+catkin_package(
+	DEPENDS VISP
+    LIBRARIES color_detection)
 
-message(STATUS ${OpenCV_INCLUDE_DIRS} ${VISP_INCLUDE_DIRS})
 
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
-
+## Add executables
 add_executable( read_topic src/read_topic.cpp )
 target_link_libraries ( read_topic ${catkin_LIBRARIES} )
 
@@ -58,3 +55,7 @@ target_link_libraries ( working_turtle ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} $
 
 add_executable( turtle_tracker src/turtle_tracker.cpp )
 target_link_libraries ( turtle_tracker ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} ${VISP_LIBRARIES})
+
+add_executable( turtle_play src/turtle_catenary.cpp )
+target_link_libraries ( turtle_play ${OpenCV_LIBRARIES} ${catkin_LIBRARIES} )
+

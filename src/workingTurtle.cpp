@@ -11,23 +11,16 @@
 // OpenCV
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-/*#include <opencv2/core/core.hpp>
-#include "opencv2/nonfree/features2d.hpp"
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-*/
 // Visp
 #include <visp3/io/vpImageIo.h>
 #include <visp3/core/vpImageConvert.h>
 #include <visp/vpDisplayX.h>
 #include <visp/vpDisplayGDI.h>
 #include <visp/vpMeLine.h>
-
-//using namespace std;
-//using namespace cv;
+// Personal library
+#include <image_processing/color_detection.hpp>
 
 static const std::string TOPIC_NAME = "camera/rgb/image_raw";
-static const std::string DEPTH_TOPIC_NAME = "camera/depth/image_raw";
 cv::Mat mat, imgsat, mapDraw;
 int h_min, h_max, lowThreshold;
 int const max_lowThreshold = 100;
@@ -63,9 +56,11 @@ cv::Mat rotateImg (cv::Mat src, int angle)
     cv::warpAffine(src, dst, rot, bbox.size());
 	return dst;
 }
-
 void cannyDetector(cv::Mat src, cv::Mat &imgMap)
 {
+
+	/*Obsolete version for detection of colored contours... date : 	*/
+
 	int ratio = 3;
 	int kernel_size = 3;
 	cv::Mat srcGray, srcHsv, cannyOutput;
@@ -228,16 +223,19 @@ void vote(int a)
 	// draw lines and p1 p2 average...
 	// attention: p1 below p2 above
 }
-
-void lineDetector(cv::Mat img, float &alpha, float &lineEnd)
+a
+void lineDetector(cv::Mat imgSrc, float &alpha, float &lineEnd)
 {
 
 	// rotate image needed for hough detection
-	img = rotateImg(img, 90);
-	// canny edge detection
-	cv::Mat imgMap;
-	cannyDetector(img, imgMap); // retrives a binary image with contours of orange spots
-	cvtColor(imgMap, mapDraw, CV_GRAY2BGR); // color image for drawing
+	imgSrc = rotateImg(imgSrc, 90);
+	// detection of orange contours
+	cv::Mat imgMapColor, imgMapMorpho, imgDraw;
+	imgDraw  = cv::Mat::zeros( imgSrc.size(), imgSrc.type() );
+	int h_min, h_max, m_e, m_d;
+	h_min = 0; h_max = 10; // orange min and max hue
+	m_e = 5; m_d = 15; // erode and dilate morphological kernels
+	ml::findColoredContour(imgSrc, imgMapColor, imgMapMorpho, h_min, h_max, m_e, m_d);
 
 	// parameters of line
 	int roi_k; // roi counter (from 0 to 3)
@@ -248,7 +246,7 @@ void lineDetector(cv::Mat img, float &alpha, float &lineEnd)
 	roi_k = 0; 	std::cout<<std::endl<<"Start line detector"<<std::endl;
 	while(roi_k < 4)
 	{
-		lineROI(roi_k, imgMap, mapDraw, linePoints, lineAngles);
+		lineROI(roi_k, imgMapMorpho, imgDraw, linePoints, lineAngles);
 		roi_k++;
 	}
 	if(linePoints.size() > 0) // print line found
@@ -269,9 +267,9 @@ void lineDetector(cv::Mat img, float &alpha, float &lineEnd)
 	}
 
 	//result visualization
-	mapDraw = rotateImg(mapDraw, -90);
-	//cv::imshow("source", img);
-	cv::imshow("hough", mapDraw); cv::waitKey(10);
+	imgDraw = rotateImg(imgDraw, -90);
+	//cv::imshow("source", imgSrc);
+	cv::imshow("hough", imgDraw); cv::waitKey(10);
 	
 }
 
@@ -349,35 +347,6 @@ void imageCallBack(const sensor_msgs::ImageConstPtr& msg) {
 
     } catch (cv_bridge::Exception& e) {
         ROS_ERROR("Could not convert from '%s' to 'bgr8'.",
-                msg->encoding.c_str());
-    }
-}
-
-void imageDepthCallback(const sensor_msgs::ImageConstPtr& msg) {
-    try {
-        // Save image
-        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, "8UC1");
-        mat = cv_ptr->image;
-		
-        //cv::Mat beConvertedMat(mat.rows, mat.cols, CV_8UC4, mat.data); // provide different view of m1 data
-		imgsat = cv::Mat::zeros( mat.size(), mat.type() );
-
-		// contrast
-		cv::minMaxLoc(mat, &min, &max, NULL,  NULL);
-		for( int r = 0; r < mat.rows ; r++ )
-		{
-			for( int c = 0; c < mat.cols ; c++ )
-			{ 
-
-				imgsat.at<uchar>(r,c) = 255 - 255*((mat.at<uchar>(r,c) - min)/ (max - min));
-			}
-		}			
-
-        // Show image
-        cv::imshow("depthview", imgsat); 
-        cv::waitKey(10);
-    } catch (cv_bridge::Exception& e) {
-        ROS_ERROR("Could not convert from '%s' to '8UC1'.",
                 msg->encoding.c_str());
     }
 }
